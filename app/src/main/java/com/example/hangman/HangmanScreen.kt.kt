@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,13 +37,20 @@ import androidx.compose.ui.unit.sp
 import com.example.hangman.ui.theme.HangmanTheme
 import java.io.IOException
 
+enum class Difficulty(val setting: String, val minLength: Int, val maxLength: Int) {
+    EASY("Easy", 3, 5),
+    MEDIUM("Medium", 6, 8),
+    HARD("Hard", 9, 15)
+}
 @Composable
 fun HangmanScreen() {
+    var currentDifficulty by remember { mutableStateOf(Difficulty.EASY) }
     var secretWord by remember { mutableStateOf("HANGMAN") }
     var guessedLetters by remember { mutableStateOf(setOf<Char>()) }
     val context = LocalContext.current
-    LaunchedEffect(Unit) {
-        secretWord = getRandomWord(context)
+    LaunchedEffect(currentDifficulty) {
+        secretWord = getRandomWord(context, currentDifficulty)
+        guessedLetters = emptySet()
     }
     Column(
         modifier = Modifier
@@ -57,7 +68,31 @@ fun HangmanScreen() {
                 fontSize = 40.sp,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(64.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.wrapContentWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Difficulty.entries.forEach { difficulty ->
+                    val isSelected = currentDifficulty == difficulty
+                    Button(
+                        onClick = { currentDifficulty = difficulty },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isSelected) Color(0xFF2196F3) else Color(0xFF2196F3).copy(alpha = 0.5f)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.height(36.dp)
+                    ) {
+                        Text(
+                            text = difficulty.setting,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
             WordToGuess(
                 secretWord = secretWord,
                 guessedLetters = guessedLetters
@@ -120,14 +155,18 @@ fun WordToGuess(secretWord: String, guessedLetters: Set<Char>) {
     }
 }
 
-fun getRandomWord(context: Context): String {
+fun getRandomWord(context: Context, difficulty: Difficulty): String {
     return try {
         context.assets.open("words.txt").bufferedReader().use { reader ->
             val wordsList = reader
                 .readLines()
                 .filter { it.isNotBlank() }
-            if (wordsList.isNotEmpty()) {
-                wordsList.random().uppercase()
+            val filteredWords = wordsList.filter { word ->
+                val cleanWord = word.trim()
+                cleanWord.length in difficulty.minLength..difficulty.maxLength
+            }
+            if (filteredWords.isNotEmpty()) {
+                filteredWords.random().uppercase()
             } else {
                 "HANGMAN"
             }
