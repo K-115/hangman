@@ -9,33 +9,64 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.util.Locale
 
-// Color definitions
-val ActiveKeyBlue = Color(0xFF1E88E5)
-val DisabledKeyBlue = Color(0xFF1E88E5).copy(alpha = 0.35f)
+const val FILE_NAME = "words.txt"
+const val MAX_MISTAKES = 6
+
+val ActiveKeyBlue = Color(0xFFFFFFFF)
+val DisabledKeyBlue = Color(0x0FFFFFF0).copy(alpha = 0.35f)
+
+fun loadWordsPoolFromAssets(context: android.content.Context): List<String> {
+    val assetManager = context.assets
+    val assetExists = assetManager.list("")?.contains(FILE_NAME) ?: false
+    if (!assetExists) return emptyList()
+
+    val inputStream = assetManager.open(FILE_NAME)
+    val reader = BufferedReader(InputStreamReader(inputStream))
+    val lines = reader.readLines()
+    reader.close()
+
+    return lines
+        .map { it.trim().uppercase(Locale.getDefault()) }
+        .filter { it.length > 4 && it.all { char -> char.isLetter() } }
+}
 
 @Composable
 fun GameScreen() {
+    val context = LocalContext.current
     var guessedLetters by remember { mutableStateOf(setOf<Char>()) }
-    val secretWord = "KOTLIN" // Temporary hardcoded word for safety testing
+    var secretWord by remember { mutableStateOf("LOADING") }
+
+    LaunchedEffect(Unit) {
+        val words = loadWordsPoolFromAssets(context)
+        if (words.isNotEmpty()) {
+            secretWord = words.random()
+        } else {
+            secretWord = "ERRORNOFILE"
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.SpaceBetween, // Pushes keyboard down, leaves room for blanks
+        verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Upper UI area placeholder to avoid layout rendering collapse crashes
         Column(
             modifier = Modifier.padding(top = 40.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "HANGMAN",
+                text = "Placeholder hangman name thing",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = ActiveKeyBlue
@@ -43,25 +74,30 @@ fun GameScreen() {
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Displays simple blanks so the app has content to draw
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (char in secretWord) {
-                    val displayChar = if (guessedLetters.contains(char)) char.toString() else "_"
-                    Text(text = displayChar, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            if (secretWord == "LOADING") {
+                Text(text = "Loading word pool...", fontSize = 20.sp)
+            } else if (secretWord == "ERRORNOFILE") {
+                Text(text = "Error: words.txt missing in assets!", fontSize = 18.sp, color = Color.Red)
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (char in secretWord) {
+                        val displayChar = if (guessedLetters.contains(char)) char.toString() else "_"
+                        Text(text = displayChar, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
 
-        // Keyboard safely locked to the bottom
         HangmanKeyboard(
             guessedLetters = guessedLetters,
             onKeyClick = { chosenLetter ->
-                guessedLetters = guessedLetters + chosenLetter
+                if (secretWord != "LOADING" && secretWord != "ERRORNOFILE") {
+                    guessedLetters = guessedLetters + chosenLetter
+                }
             }
         )
     }
 }
-
 @Composable
 fun HangmanKeyboard(
     guessedLetters: Set<Char>,
@@ -120,3 +156,5 @@ fun KeyboardRow(
         }
     }
 }
+
+
