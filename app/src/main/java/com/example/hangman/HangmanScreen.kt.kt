@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,10 +48,32 @@ fun HangmanScreen() {
     var currentDifficulty by remember { mutableStateOf(Difficulty.EASY) }
     var secretWord by remember { mutableStateOf("HANGMAN") }
     var guessedLetters by remember { mutableStateOf(setOf<Char>()) }
+    var currentStreak by remember { mutableIntStateOf(0) }
+    var bestStreak by remember { mutableIntStateOf(0) }
+    var resetCount by remember { mutableIntStateOf(0) }
+    var hasGivenUp by remember { mutableStateOf(false) }
+    val isWon = secretWord.isNotEmpty() &&
+            !hasGivenUp &&
+            secretWord.all { char -> guessedLetters.contains(char) }
+    val maxIncorrectGuesses = 6
+    val incorrectGuesses = guessedLetters.filter { char -> !secretWord.contains(char) }.size
+    val isLost = incorrectGuesses >= maxIncorrectGuesses || hasGivenUp
+    val isGameOver = isWon || isLost
     val context = LocalContext.current
-    LaunchedEffect(currentDifficulty) {
+    LaunchedEffect(isWon, isLost) {
+        if (isWon) {
+            currentStreak ++
+            if (currentStreak > bestStreak) {
+                bestStreak = currentStreak
+            }
+        } else if (isLost) {
+            currentStreak = 0
+        }
+    }
+    LaunchedEffect(currentDifficulty, resetCount) {
         secretWord = getRandomWord(context, currentDifficulty)
         guessedLetters = emptySet()
+        hasGivenUp = false
     }
     Column(
         modifier = Modifier
@@ -68,6 +91,24 @@ fun HangmanScreen() {
                 fontSize = 40.sp,
                 fontWeight = FontWeight.Bold
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.wrapContentWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "🔥 Streak: $currentStreak",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFF9800)
+                )
+                Text(
+                    text = "🏆 Best: $bestStreak",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF4CAF50)
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier.wrapContentWidth(),
@@ -97,11 +138,65 @@ fun HangmanScreen() {
                 secretWord = secretWord,
                 guessedLetters = guessedLetters
             )
+            Spacer(modifier = Modifier.height(24.dp))
+            if (isGameOver) {
+                Button(
+                    onClick = {
+                        guessedLetters = emptySet()
+                        hasGivenUp = false
+                        resetCount++
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF4CAF50)
+                    ),
+                    modifier = Modifier.height(40.dp)
+                ) {
+                    Text(
+                        text = "Next Word ➡️",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            } else {
+                Button(
+                    onClick = {
+                        currentStreak = 0
+                        hasGivenUp = true
+                        guessedLetters = guessedLetters + secretWord.toSet()
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFE53935)
+                    ),
+                    modifier = Modifier.height(40.dp)
+                ) {
+                    Text(
+                        text = "Give Up 🏳️",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
         HangmanKeyboard(
             guessedLetters = guessedLetters,
             onKeyClick = { letter ->
-                guessedLetters = guessedLetters + letter
+                if (!isGameOver) {
+                    val updatedGuesses = guessedLetters + letter
+                    guessedLetters = updatedGuesses
+                    val playerWonNow = secretWord.isNotEmpty() && secretWord.all { char -> updatedGuesses.contains(char) }
+                    if (playerWonNow) {
+                        currentStreak++
+                        if (currentStreak > bestStreak) {
+                            bestStreak = currentStreak
+                        }
+                    } else if (updatedGuesses.filter { char -> !secretWord.contains(char) }.size >= maxIncorrectGuesses) {
+                        currentStreak = 0
+                    }
+                }
             }
         )
     }
