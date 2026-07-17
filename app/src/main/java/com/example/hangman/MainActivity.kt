@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             HangmanTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    HangmanScreen(
+                    MainNavigationEngine(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
