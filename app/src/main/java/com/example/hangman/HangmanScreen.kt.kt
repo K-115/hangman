@@ -1,13 +1,22 @@
 package com.example.hangman
 
 import android.content.Context
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,6 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,29 +37,67 @@ import androidx.compose.ui.unit.sp
 import com.example.hangman.ui.theme.HangmanTheme
 import java.io.IOException
 
+enum class Difficulty(val setting: String, val minLength: Int, val maxLength: Int) {
+    EASY("Easy", 3, 5),
+    MEDIUM("Medium", 6, 8),
+    HARD("Hard", 9, 15)
+}
 @Composable
-fun HangmanScreen(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-
-    var secretWord by remember { mutableStateOf("PREVIEW") }
+fun HangmanScreen() {
+    var currentDifficulty by remember { mutableStateOf(Difficulty.EASY) }
+    var secretWord by remember { mutableStateOf("HANGMAN") }
     var guessedLetters by remember { mutableStateOf(setOf<Char>()) }
-
-    LaunchedEffect(Unit) {
-        secretWord = getRandomWord(context)
+    val context = LocalContext.current
+    LaunchedEffect(currentDifficulty) {
+        secretWord = getRandomWord(context, currentDifficulty)
+        guessedLetters = emptySet()
     }
-
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        WordToGuess(
-            secretWord = secretWord,
-            guessedLetters = guessedLetters
-        )
-
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(40.dp))
+            Text(
+                text = "WORD TO GUESS:",
+                fontSize = 40.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.wrapContentWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Difficulty.entries.forEach { difficulty ->
+                    val isSelected = currentDifficulty == difficulty
+                    Button(
+                        onClick = { currentDifficulty = difficulty },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isSelected) Color(0xFF2196F3) else Color(0xFF2196F3).copy(alpha = 0.5f)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.height(36.dp)
+                    ) {
+                        Text(
+                            text = difficulty.setting,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+            WordToGuess(
+                secretWord = secretWord,
+                guessedLetters = guessedLetters
+            )
+        }
         HangmanKeyboard(
             guessedLetters = guessedLetters,
             onKeyClick = { letter ->
@@ -59,56 +108,65 @@ fun HangmanScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun WordToGuess(
-    secretWord: String,
-    guessedLetters: Set<Char>
-) {
-    var displayFontSize by remember(secretWord) { mutableStateOf(44.sp) }
-    val displayString = secretWord
-        .map { char ->
-            if (char in guessedLetters) char else '_'
-        }
-        .joinToString(" ")
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+fun WordToGuess(secretWord: String, guessedLetters: Set<Char>) {
+    val slotWidth = when {
+        secretWord.length <= 5 -> 48.dp
+        secretWord.length <= 7 -> 38.dp
+        secretWord.length <= 9 -> 30.dp
+        else -> 22.dp
+    }
+    val fontSize = when {
+        secretWord.length <= 5 -> 38.sp
+        secretWord.length <= 7 -> 30.sp
+        secretWord.length <= 9 -> 24.sp
+        else -> 18.sp
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.Bottom
     ) {
-        Text(
-            text = "WORD TO GUESS:",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = displayString,
-            fontSize = displayFontSize,
-            fontWeight = FontWeight.ExtraBold,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            softWrap = false,
-            letterSpacing = 4.sp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
-            onTextLayout = { textLayoutResult ->
-                if (textLayoutResult.hasVisualOverflow) {
-                    displayFontSize = (displayFontSize.value * 0.9f).sp
-                }
+        secretWord.forEach { char ->
+            val isGuessed = guessedLetters.contains(char)
+            Column(
+                modifier = Modifier
+                    .width(slotWidth)
+                    .padding(horizontal = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = if (isGuessed) char.toString() else " ",
+                    fontSize = fontSize,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .clip(RoundedCornerShape(1.5.dp))
+                        .background(Color.Black)
+                )
             }
-        )
+        }
     }
 }
 
-fun getRandomWord(context: Context): String {
+fun getRandomWord(context: Context, difficulty: Difficulty): String {
     return try {
         context.assets.open("words.txt").bufferedReader().use { reader ->
             val wordsList = reader
                 .readLines()
                 .filter { it.isNotBlank() }
-            if (wordsList.isNotEmpty()) {
-                wordsList.random().uppercase()
+            val filteredWords = wordsList.filter { word ->
+                val cleanWord = word.trim()
+                cleanWord.length in difficulty.minLength..difficulty.maxLength
+            }
+            if (filteredWords.isNotEmpty()) {
+                filteredWords.random().uppercase()
             } else {
                 "HANGMAN"
             }
