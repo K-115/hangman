@@ -6,7 +6,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -25,14 +28,14 @@ private val DisabledKeyBlue = Color(0xFF2196F3).copy(alpha = 0.35f)
 @Composable
 fun HangmanKeyboard(
     guessedLetters: Set<Char>,
-    onKeyClick: (Char) -> Unit,
-    modifier: Modifier = Modifier
+    onKeyClick: (Char) -> Unit
 ) {
-    val row1 = ('A'..'M').toList()
-    val row2 = ('N'..'Z').toList()
+    val row1 = listOf('Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P')
+    val row2 = listOf('A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L')
+    val row3 = listOf('Z', 'X', 'C', 'V', 'B', 'N', 'M')
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -48,6 +51,11 @@ fun HangmanKeyboard(
             guessedLetters = guessedLetters,
             onKeyClick = onKeyClick
         )
+        KeyboardRow(
+            letters = row3,
+            guessedLetters = guessedLetters,
+            onKeyClick = onKeyClick
+        )
     }
 }
 
@@ -58,8 +66,8 @@ fun KeyboardRow(
     onKeyClick: (Char) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp,
+        modifier = Modifier.wrapContentWidth(),
+        horizontalArrangement = Arrangement.spacedBy(5.dp,
             Alignment.CenterHorizontally)
     ) {
         for (letter in letters) {
@@ -69,8 +77,8 @@ fun KeyboardRow(
                 onClick = { onKeyClick(letter) },
                 enabled = !isGuessed,
                 modifier = Modifier
-                    .weight(1f)
-                    .aspectRatio(1f),
+                    .width(30.dp)
+                    .height(44.dp),
                 shape = RoundedCornerShape(6.dp),
                 contentPadding = PaddingValues(0.dp),
                 colors = ButtonDefaults.buttonColors(
