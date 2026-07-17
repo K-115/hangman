@@ -1,91 +1,128 @@
-package com.example.hangman
-
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-
-private val ActiveKeyBlue = Color(0xFF2196F3)
-private val DisabledKeyBlue = Color(0xFF2196F3).copy(alpha = 0.35f)
-
-@Composable
-fun HangmanKeyboard(
-    guessedLetters: Set<Char>,
-    onKeyClick: (Char) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val row1 = ('A'..'M').toList()
-    val row2 = ('N'..'Z').toList()
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        KeyboardRow(
-            letters = row1,
-            guessedLetters = guessedLetters,
-            onKeyClick = onKeyClick
-        )
-        KeyboardRow(
-            letters = row2,
-            guessedLetters = guessedLetters,
-            onKeyClick = onKeyClick
-        )
-    }
-}
-
-@Composable
-fun KeyboardRow(
-    letters: List<Char>,
-    guessedLetters: Set<Char>,
-    onKeyClick: (Char) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp,
-            Alignment.CenterHorizontally)
-    ) {
-        for (letter in letters) {
-            val isGuessed = guessedLetters.contains(letter)
-
-            Button(
-                onClick = { onKeyClick(letter) },
-                enabled = !isGuessed,
-                modifier = Modifier
-                    .weight(1f)
-                    .aspectRatio(1f),
-                shape = RoundedCornerShape(6.dp),
-                contentPadding = PaddingValues(0.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = ActiveKeyBlue,
-                    contentColor = Color.White,
-                    disabledContainerColor = DisabledKeyBlue,
-                    disabledContentColor = Color.White.copy(alpha = 0.5f)
-                )
-            ) {
-                Text(
-                    text = letter.toString(),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
+//package com.example.hangman
+//
+//import android.content.Context
+//import androidx.compose.foundation.layout.Arrangement
+//import androidx.compose.foundation.layout.Column
+//import androidx.compose.foundation.layout.Spacer
+//import androidx.compose.foundation.layout.fillMaxSize
+//import androidx.compose.foundation.layout.fillMaxWidth
+//import androidx.compose.foundation.layout.height
+//import androidx.compose.foundation.layout.padding
+//import androidx.compose.material3.Text
+//import androidx.compose.runtime.Composable
+//import androidx.compose.runtime.LaunchedEffect
+//import androidx.compose.runtime.getValue
+//import androidx.compose.runtime.mutableStateOf
+//import androidx.compose.runtime.remember
+//import androidx.compose.runtime.setValue
+//import androidx.compose.ui.Alignment
+//import androidx.compose.ui.Modifier
+//import androidx.compose.ui.platform.LocalContext
+//import androidx.compose.ui.text.font.FontWeight
+//import androidx.compose.ui.text.style.TextAlign
+//import androidx.compose.ui.tooling.preview.Preview
+//import androidx.compose.ui.unit.dp
+//import androidx.compose.ui.unit.sp
+//import com.example.hangman.ui.theme.HangmanTheme
+//import java.io.IOException
+//
+//@Composable
+//fun HangmanScreen(modifier: Modifier = Modifier) {
+//    val context = LocalContext.current
+//
+//    var secretWord by remember { mutableStateOf("PREVIEW") }
+//    var guessedLetters by remember { mutableStateOf(setOf<Char>()) }
+//
+//    LaunchedEffect(Unit) {
+//        secretWord = getRandomWord(context)
+//    }
+//
+//    Column(
+//        modifier = modifier
+//            .fillMaxSize()
+//            .padding(16.dp),
+//        horizontalAlignment = Alignment.CenterHorizontally,
+//        verticalArrangement = Arrangement.SpaceBetween
+//    ) {
+//        WordToGuess(
+//            secretWord = secretWord,
+//            guessedLetters = guessedLetters
+//        )
+//
+////        HangmanKeyboard(
+////            guessedLetters = guessedLetters,
+////            onKeyClick = { letter ->
+////                guessedLetters = guessedLetters + letter
+////            }
+////        )
+//    }
+//}
+//
+//@Composable
+//fun WordToGuess(
+//    secretWord: String,
+//    guessedLetters: Set<Char>
+//) {
+//    var displayFontSize by remember(secretWord) { mutableStateOf(44.sp) }
+//    val displayString = secretWord
+//        .map { char ->
+//            if (char in guessedLetters) char else '_'
+//        }
+//        .joinToString(" ")
+//
+//    Column(
+//        modifier = Modifier.fillMaxWidth(),
+//        horizontalAlignment = Alignment.CenterHorizontally
+//    ) {
+//        Text(
+//            text = "WORD TO GUESS:",
+//            fontSize = 14.sp,
+//            fontWeight = FontWeight.Bold,
+//        )
+//        Spacer(modifier = Modifier.height(12.dp))
+//
+//        Text(
+//            text = displayString,
+//            fontSize = displayFontSize,
+//            fontWeight = FontWeight.ExtraBold,
+//            textAlign = TextAlign.Center,
+//            maxLines = 1,
+//            softWrap = false,
+//            letterSpacing = 4.sp,
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(horizontal = 8.dp),
+//            onTextLayout = { textLayoutResult ->
+//                if (textLayoutResult.hasVisualOverflow) {
+//                    displayFontSize = (displayFontSize.value * 0.9f).sp
+//                }
+//            }
+//        )
+//    }
+//}
+//
+//fun getRandomWord(context: Context): String {
+//    return try {
+//        context.assets.open("words.txt").bufferedReader().use { reader ->
+//            val wordsList = reader
+//                .readLines()
+//                .filter { it.isNotBlank() }
+//            if (wordsList.isNotEmpty()) {
+//                wordsList.random().uppercase()
+//            } else {
+//                "HANGMAN"
+//            }
+//        }
+//    } catch (error: IOException) {
+//        error.printStackTrace()
+//        "HANGMAN"
+//    }
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun HangmanScreenPreview() {
+//    HangmanTheme {
+//        HangmanScreen()
+//    }
+//}
