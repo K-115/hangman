@@ -43,14 +43,19 @@ fun HangmanScreen(
     var secretWord by remember { mutableStateOf("LOADING") }
     var guessedLetters by remember { mutableStateOf(setOf<Char>()) }
 
+    var hasGivenUp by remember { mutableStateOf(false) }
+
     var currentStreak by remember { mutableIntStateOf(0) }
     var bestStreak by remember { mutableIntStateOf(0) }
     var streakUpdated by remember { mutableStateOf(false) }
 
     val currentMistakes = guessedLetters.count { it !in secretWord }
 
-    val isGameWon = secretWord != "LOADING" && secretWord.all { it in guessedLetters }
-    val isGameLost = currentMistakes >= MAX_MISTAKES
+    val isGameWon =
+        secretWord != "LOADING" &&
+                !hasGivenUp &&
+                secretWord.all { it in guessedLetters }
+    val isGameLost = currentMistakes >= MAX_MISTAKES  || hasGivenUp
 
     LaunchedEffect(isGameWon, isGameLost) {
         if (!streakUpdated) {
@@ -73,6 +78,7 @@ fun HangmanScreen(
 
     LaunchedEffect(difficulty, resetTrigger) {
         streakUpdated = false
+        hasGivenUp = false
         secretWord = "LOADING"
         secretWord = getRandomWord(context, difficulty)
     }
@@ -195,15 +201,39 @@ fun HangmanScreen(
                 }
             }
 
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
 
-            HangmanKeyboard(
-                guessedLetters = guessedLetters,
-                onKeyClick = { letter ->
-                    if (!isGameWon && !isGameLost) {
-                        guessedLetters = guessedLetters + letter
+                if (!isGameWon && !isGameLost) {
+
+                    Button(
+                        onClick = {
+                            hasGivenUp = true
+                            guessedLetters = guessedLetters + secretWord.toSet()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFE53935)
+                        )
+                    ) {
+                        Text(
+                            text = "GIVE UP 🏳️",
+                            color = Color.White
+                        )
                     }
+
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
-            )
+
+                HangmanKeyboard(
+                    guessedLetters = guessedLetters,
+                    onKeyClick = { letter ->
+                        if (!isGameWon && !isGameLost) {
+                            guessedLetters = guessedLetters + letter
+                        }
+                    }
+                )
+            }
         }
     }
     if (isGameWon) {
@@ -260,6 +290,7 @@ fun HangmanScreen(
                 Button(
                     onClick = {
                         guessedLetters = emptySet()
+                        hasGivenUp = false
                         resetTrigger++
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
@@ -284,16 +315,21 @@ fun HangmanScreen(
             onDismissRequest = { },
             title = {
                 Text(
-                    text = "💀 WHY YOU LITTLE...",
+                    text = "💀 WHY YOU LITTLE...!",
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFE53935)
                 )
             },
-            text = { Text(text = "You ran out of lives! The word was '$secretWord'.") },
+            text = { Text(text =
+                if (hasGivenUp)
+                    "You gave up! The word was '$secretWord'."
+                else
+                    "You ran out of lives! The word was '$secretWord'.") },
             confirmButton = {
                 Button(
                     onClick = {
                         guessedLetters = emptySet()
+                        hasGivenUp = false
                         resetTrigger++
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935))
