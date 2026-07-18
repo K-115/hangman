@@ -38,18 +38,41 @@ fun HangmanScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var resetTrigger by remember { mutableStateOf(0) }
+    var resetTrigger by remember { mutableIntStateOf(0) }
 
     var secretWord by remember { mutableStateOf("LOADING") }
     var guessedLetters by remember { mutableStateOf(setOf<Char>()) }
 
+    var currentStreak by remember { mutableIntStateOf(0) }
+    var bestStreak by remember { mutableIntStateOf(0) }
+    var streakUpdated by remember { mutableStateOf(false) }
 
     val currentMistakes = guessedLetters.count { it !in secretWord }
 
     val isGameWon = secretWord != "LOADING" && secretWord.all { it in guessedLetters }
     val isGameLost = currentMistakes >= MAX_MISTAKES
 
+    LaunchedEffect(isGameWon, isGameLost) {
+        if (!streakUpdated) {
+            when {
+                isGameWon -> {
+                    currentStreak++
+                    if (currentStreak > bestStreak) {
+                        bestStreak = currentStreak
+                    }
+                    streakUpdated = true
+                }
+
+                isGameLost -> {
+                    currentStreak = 0
+                    streakUpdated = true
+                }
+            }
+        }
+    }
+
     LaunchedEffect(difficulty, resetTrigger) {
+        streakUpdated = false
         secretWord = "LOADING"
         secretWord = getRandomWord(context, difficulty)
     }
@@ -142,6 +165,23 @@ fun HangmanScreen(
                 Column(
                     horizontalAlignment = Alignment.End
                 ) {
+
+                    Text(
+                        text = "🔥 Streak: $currentStreak",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFF9800)
+                    )
+
+                    Text(
+                        text = "🏆 Best: $bestStreak",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF4CAF50)
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     Text(
                         text = "Lives Left: $livesRemaining ❤️",
                         fontSize = 16.sp,
